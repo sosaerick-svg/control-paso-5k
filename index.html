@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17223a">
+<title>Control de Paso 5K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: barra superior fija con identidad del juez; debajo, cuadrícula de dorsales tipo "bib" para tocar. Panel de coordinación con pestañas. */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --ink:#17223a; --muted:#5d6982; --line:#d5dbe6;
+  --accent:#c8402a; --accent-ink:#ffffff; --ok:#1d7f46; --okbg:#e1f3e8; --warn:#9a6212; --warnbg:#fbf0dc;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#182033; --ink:#e8ecf4; --muted:#94a0b8; --line:#2b3653;
+  --accent:#e5654c; --accent-ink:#1a0d09; --ok:#4cc982; --okbg:#143a28; --warn:#e6b25a; --warnbg:#3a2c12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#182033; --ink:#e8ecf4; --muted:#94a0b8; --line:#2b3653;
+  --accent:#e5654c; --accent-ink:#1a0d09; --ok:#4cc982; --okbg:#143a28; --warn:#e6b25a; --warnbg:#3a2c12; color-scheme:dark}
+*{box-sizing:border-box}
+html{color-scheme:light;-webkit-text-size-adjust:100%}
+body{margin:0}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:12px;padding-block:10px;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em;text-transform:uppercase}
+.brand b{color:var(--accent)}
+.sp{flex:1}
+.pill{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.ok{color:var(--ok);border-color:var(--ok)}
+.pill.warn{color:var(--warn);border-color:var(--warn);background:var(--warnbg)}
+button,.btn{font:600 15px var(--f-body);border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.link{border:0;background:none;color:var(--muted);text-decoration:underline;padding:6px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+input,select,textarea{font:16px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}
+textarea{width:100%;min-height:180px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0;letter-spacing:.01em}
+h2{font-size:26px;text-transform:uppercase}
+h3{font-size:19px;text-transform:uppercase;letter-spacing:.03em}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.center{max-width:420px;margin:48px auto 0}
+.flash{padding:10px 12px;border-radius:8px;background:var(--warnbg);color:var(--warn);font-weight:600}
+.flash.okf{background:var(--okbg);color:var(--ok)}
+/* Juez */
+.jhead{display:flex;flex-direction:column;gap:6px;padding-block:16px 8px}
+.jpoint{font-family:var(--f-display);font-weight:700;font-size:34px;line-height:1;text-transform:uppercase}
+.jpoint span{color:var(--accent)}
+.progress{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--ok);transition:width .3s}
+.quick{display:flex;gap:8px;margin-block:12px}
+.quick input{flex:1;font-family:var(--f-display);font-size:26px;font-weight:700;letter-spacing:.05em;padding:6px 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.bib{position:relative;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);padding:12px 4px 8px;text-align:center;cursor:pointer;color:var(--ink);font:inherit;
+  background-image:radial-gradient(circle,var(--line) 2.5px,transparent 3px),radial-gradient(circle,var(--line) 2.5px,transparent 3px),radial-gradient(circle,var(--line) 2.5px,transparent 3px),radial-gradient(circle,var(--line) 2.5px,transparent 3px);
+  background-repeat:no-repeat;background-size:10px 10px;background-position:4px 4px,calc(100% - 4px) 4px,4px calc(100% - 4px),calc(100% - 4px) calc(100% - 4px)}
+.bib .n{display:block;font-family:var(--f-display);font-weight:700;font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.bib .t{display:block;font-size:11px;color:var(--muted);margin-top:3px;min-height:15px;font-variant-numeric:tabular-nums}
+.bib.on{background-color:var(--okbg);border-color:var(--ok)}
+.bib.on .n,.bib.on .t{color:var(--ok)}
+.bib.pend{border-style:dashed;border-color:var(--warn)}
+.undo{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));margin-top:14px;background:var(--ink);color:var(--bg);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.undo button{padding:8px 12px}
+/* Panel */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-block:18px 16px;overflow-x:auto}
+.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;color:var(--muted);font-family:var(--f-display);font-size:18px;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.points{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.pcard .big{font-family:var(--f-display);font-size:30px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:12px;padding:2px 7px;border-radius:6px;background:var(--bg);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--bg)}
+td.d{font-family:var(--f-display);font-weight:700;font-size:18px}
+td.c{text-align:center}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;border:1.5px solid var(--line)}
+.dot.y{background:var(--ok);border-color:var(--ok)}
+tr.inc td.tot{color:var(--warn);font-weight:700}
+tr.cmp td.tot{color:var(--ok);font-weight:700}
+.jt input{width:100%}
+.jt td{white-space:normal;vertical-align:top}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--bg);padding:1px 5px;border-radius:4px}
+@media (max-width:520px){.jpoint{font-size:28px}.grid{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}.bib .n{font-size:26px}}
+@media (prefers-reduced-motion:reduce){.progress i{transition:none}}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,470px),1fr));gap:14px}
+.rcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.rcard .tablewrap{border-radius:8px}
+.rcard td.nm{white-space:normal;min-width:120px}
+tr.pod td.d:first-child{color:var(--accent);font-size:22px}
+tr.inv td{color:var(--muted)}
+.why{color:var(--warn);font-weight:600}
+tr.pendr td{color:var(--warn)}
+td select{font-size:14px;padding:5px 7px}
+details>summary{cursor:pointer;font-weight:600}
+details[open]>summary{margin-bottom:12px}
+#clk{font-variant-numeric:tabular-nums}
+.sexb{min-width:64px;font-family:var(--f-display);font-size:24px;padding:6px 14px}
+.sexb.m{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <div class="brand">5K <b>·</b> Control de paso</div>
+  <div class="sp"></div>
+  <span id="clk" class="pill" title="Hora de este teléfono">--:--:--</span>
+  <span id="net" class="pill">Conectando</span>
+</div></header>
+<main class="wrap" id="main">
+  <div class="center panel stack"><h2>Cargando</h2><p class="muted">Conectando con el registro compartido de jueces.</p></div>
+</main>
+
+<script>
+const CAT={E:"Estudiantes",D:"Docentes",G:"Egresados",L:"Libre"};
+const CAT1={E:"Estudiante",D:"Docente",G:"Egresado",L:"Libre",T:"Travesía",X:"Sin datos"};
+const SEXN={F:"Femenino",M:"Masculino"};
+const EST={"":"Válido",DQ:"Descalificado",DNF:"No terminó"};
+const ACTL={quitar:"Marca anulada",estado:"Cambio de estado",nota:"Nota",orden:"Orden de llegada",resultados:"Resultados",prueba:"Borrado de pruebas",clasificar:"Clasificación"};
+const S={view:"loading",tab:"avance",code:null,hideDone:false,undo:null,flash:null,filt:{c:"",s:"",st:"",q:""},csv:"",parsed:null,edit:null,showAll:{},obsEdit:null,wipe:0};
+let db=null,user=null,owner=false,canWrite=null;
+let cfg=null,runners=[],rmap=new Map(),cfgReady=false,runReady=false;
+const marks={};let pending={};let status=new Map();let state={};let logs=[];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hhmm=ts=>new Date(ts).toLocaleTimeString("es-GT",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let DEV=lsGet("cp5k.dev",null);if(!DEV){DEV=Math.random().toString(36).slice(2,8).toUpperCase();lsSet("cp5k.dev",DEV)}
+
+/* ---------- modelo ---------- */
+const DEF_POINTS=[1,2,3,4,5].map(i=>({id:i,name:"Punto "+i})).concat([{id:6,name:"Meta",finish:true}]);
+function points(){const p=(cfg&&cfg.points)||DEF_POINTS;return p.some(x=>x.finish)?p:p.concat([{id:6,name:"Meta",finish:true}])}
+function controls(){return points().filter(p=>!p.finish)}
+function fin(){return points().find(p=>p.finish)}
+function ptName(id){const p=points().find(x=>x.id===id);return p?p.name:"Punto "+id}
+function shortName(p){return p.finish?"Meta":p.name.replace(/^Punto\s*/i,"P")}
+function judges(){return (cfg&&cfg.judges)||[]}
+function runners5k(){return runners.filter(r=>r[1]!=="T")}
+function inRanges(n,r){return (r||[]).some(([a,b])=>n>=a&&n<=b)}
+function fmtRanges(r){return (r||[]).map(([a,b])=>a===b?`${a}`:`${a}–${b}`).join(", ")||"sin asignar"}
+function parseRanges(str){const out=[];for(const part of String(str).split(",")){const p=part.trim();if(!p)continue;const m=p.match(/^(\d+)\s*[-–]\s*(\d+)$/)||p.match(/^(\d+)$/);if(!m)return null;const a=+m[1],b=+(m[2]||m[1]);out.push([Math.min(a,b),Math.max(a,b)])}return out}
+function judgeItems(j){if(rmap.size)return runners5k().filter(r=>inRanges(r[0],j.ranges)).sort((a,b)=>a[0]-b[0]);const o=[];for(const[a,b]of j.ranges||[])for(let n=a;n<=b&&o.length<2000;n++)o.push([n,"","",""]);return o}
+function judgeFor(p,n){return judges().find(j=>j.point===p&&inRanges(n,j.ranges))}
+function myJudge(){if(!JD||!S.code||JD.judge.code!==S.code.toUpperCase())return null;return judges().find(j=>j.code===JD.judge.code)||JD.judge}
+function isFinishJudge(j){const f=fin();return !!(j&&f&&j.point===f.id)}
+function docId(p,n,code){const f=fin();return (f&&p===f.id)?`p${p}-${n}-${code}`:`p${p}-${n}`}
+function allMarks(p){const m=new Map(marks[p]||[]);for(const[k,b]of Object.entries(pending)){if(b.point!==p)continue;const c=m.get(b.dorsal);if(!c||b.ts<c.ts)m.set(b.dorsal,{ts:b.ts,by:b.by,sex:b.sex||"",ids:[k],pend:true})}return m}
+function passCount(n){return controls().filter(p=>marks[p.id]&&marks[p.id].has(n)).length}
+function missing(n){return controls().filter(p=>!(marks[p.id]&&marks[p.id].has(n))).map(p=>p.name)}
+function finishOrder(){const f=fin();const m=marks[f.id]||new Map();return [...m.entries()].sort((a,b)=>a[1].ts-b[1].ts||a[0]-b[0]).map(([n,v])=>({n,ts:v.ts,ids:v.ids}))}
+function catLabel(r){return r?CAT1[r[1]]+(r[2]?" "+r[2]:""):""}
+function effCat(n){const st=status.get(n);if(st&&st.cat)return st.cat;const r=rmap.get(n);return r?r[1]:""}
+function effSex(n){const st=status.get(n);if(st&&st.rama)return st.rama;const f=fin();const m=f&&marks[f.id]&&marks[f.id].get(n);if(m&&m.sex)return m.sex;const r=rmap.get(n);return r?r[2]:""}
+function classified(n){const c=effCat(n);return !!(c&&"EDGL".includes(c)&&effSex(n))}
+
+/* ---------- conexión ---------- */
+const SB_URL="https://ivmdnefsjnpceeirljdh.supabase.co",SB_KEY="sb_publishable_zsHnhLA-julBL2VcWORLkA_OM1Ki3Yg";
+let OFF=lsGet("cp5k.off",0),PIN=lsGet("cp5k.pin",null),JD=null,lastOk=0,pollingJ=false,pollingA=false,lastStruct="",lastJD="";
+const now=()=>Date.now()+OFF;
+async function rpc(fn,args){const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),15000);
+  try{const r=await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify(args||{}),signal:ctl.signal});
+    const txt=await r.text();let j=null;try{j=txt?JSON.parse(txt):null}catch(e){}
+    if(!r.ok)throw {code:r.status,message:(j&&j.message)||("Error "+r.status)};
+    lastOk=Date.now();return j}
+  finally{clearTimeout(tm)}}
+function setOffset(serverNow,t0){if(!serverNow)return;const t1=Date.now();if(t1-t0>4000)return;OFF=Math.round(serverNow-(t0+t1)/2);lsSet("cp5k.off",OFF)}
+function applyJD(d){JD=d;cfg={points:d.points||[],judges:(d.judges||[]).map(x=>x.slot===d.judge.slot?{...x,...d.judge}:x)};
+  if(!cfg.judges.some(x=>x.code===d.judge.code))cfg.judges.push(d.judge);
+  runners=d.runners||[];rmap=new Map(runners.map(r=>[r[0],r]));cfgReady=runReady=true;if(!marks[d.judge.point])marks[d.judge.point]=new Map()}
+async function boot(){
+  pending=lsGet("cp5k.pending",{});S.code=lsGet("cp5k.code",null);
+  for(let p=1;p<=6;p++)marks[p]=new Map();
+  setInterval(tick,1000);tick();
+  if(PIN){owner=true;S.view="admin";draw();pollAdmin(true)}
+  else if(S.code){const c=lsGet("cp5k.jd",null);if(c&&c.judge&&c.judge.code===S.code.toUpperCase()){applyJD(c);lastJD=jdSig(c);S.view="judge"}else S.view="login";draw();refreshJD()}
+  else{S.view="login";draw()}
+  setInterval(()=>{if(S.view==="judge")pollJudge()},5000);
+  setInterval(()=>{if(owner&&S.view==="admin")pollAdmin(false)},10000);
+  setInterval(flush,5000);
+  setInterval(()=>{if(S.view==="judge")refreshJD()},180000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){flush();if(S.view==="judge")pollJudge();if(owner&&S.view==="admin")pollAdmin(true)}});
+}
+function jdSig(d){return JSON.stringify([d.judge,d.judges,d.points,(d.runners||[]).length])}
+async function refreshJD(){if(!S.code)return;try{const t0=Date.now();const d=await rpc("judge_login",{p_code:S.code});
+    if(!d){S.code=null;lsSet("cp5k.code",null);JD=null;S.view=owner?"admin":"login";return draw()}
+    setOffset(d.now,t0);lsSet("cp5k.jd",d);const sig=jdSig(d);const changed=sig!==lastJD||S.view!=="judge";lastJD=sig;applyJD(d);
+    if(changed){S.view="judge";draw()}pollJudge()}
+  catch(e){netState()}}
+async function pollJudge(){if(pollingJ||!S.code||!JD)return;pollingJ=true;
+  try{const t0=Date.now();const d=await rpc("judge_marks",{p_code:S.code});
+    if(d){setOffset(d.now,t0);const m=new Map();for(const[n,ts,sex]of d.marks)m.set(n,{ts,sex:sex||"",ids:[]});marks[JD.judge.point]=m;refresh()}}
+  catch(e){}finally{pollingJ=false;netState()}}
+async function pollAdmin(force){if(!PIN||(pollingA&&!force))return;pollingA=true;
+  try{const t0=Date.now();const d=await rpc("admin_data",{p_pin:PIN});
+    if(!d){PIN=null;lsSet("cp5k.pin",null);owner=false;S.view="pinform";S.pinErr="El PIN ya no es válido.";return draw()}
+    setOffset(d.now,t0);
+    const sig=JSON.stringify([d.points,d.judges,d.runners.length]);const structural=sig!==lastStruct;lastStruct=sig;
+    cfg={points:d.points,judges:d.judges};runners=d.runners;rmap=new Map(runners.map(r=>[r[0],r]));
+    for(let p=1;p<=6;p++)marks[p]=new Map();
+    for(const[p,n,ts,sex,by]of d.marks){const m=marks[p]||(marks[p]=new Map());const c=m.get(n);
+      if(!c)m.set(n,{ts,sex:sex||"",by,ids:[]});else{if(ts<c.ts){c.ts=ts;c.by=by}if(!c.sex&&sex)c.sex=sex}}
+    status=new Map((d.status||[]).map(x=>[x.dorsal,x]));state=d.state||{};logs=d.log||[];cfgReady=runReady=true;
+    if(S.view==="admin"){if(structural&&!(S.tab==="jueces"&&S.edit)&&S.tab!=="listado")draw();else refresh()}}
+  catch(e){}finally{pollingA=false;netState()}}
+function netState(){const n=Object.keys(pending).length;const el=$("#net");if(!el)return;const online=Date.now()-lastOk<20000;
+  if(n){el.className="pill warn";el.textContent=`${n} por enviar`}
+  else if(!online){el.className="pill warn";el.textContent=lastOk?"Sin señal":"Conectando"}
+  else{el.className="pill ok";el.textContent="En línea"}}
+function tick(){const c=$("#clk");if(c)c.textContent=hhmm(now());
+  if(S.flash&&Date.now()-S.flash.at>4500){S.flash=null;renderFlash()}
+  const cd=$("#cd");if(cd)cd.textContent=countdownText();netState()}
+function editingIn(sel){const a=document.activeElement;return !!(a&&a.closest&&a.closest(sel)&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))}
+
+/* ---------- registro ---------- */
+function setFlash(ok,t){S.flash={ok,t,at:Date.now()};renderFlash()}
+function renderFlash(){const el=$("#jflash");if(el)el.innerHTML=S.flash?`<p class="flash${S.flash.ok?" okf":""}">${esc(S.flash.t)}</p>`:""}
+function logAct(){}
+async function mark(n){
+  const j=myJudge();if(!j)return;const p=j.point;
+  if(allMarks(p).has(n)){S.undo=n;return refresh()}
+  const key=docId(p,n,j.code);const body={point:p,dorsal:n,ts:now(),by:j.code,dev:DEV};
+  pending[key]=body;lsSet("cp5k.pending",pending);setFlash(true,`${n} registrado`);refresh();
+  flush();
+}
+let flushing=false;
+async function flush(){if(flushing)return;const all=Object.entries(pending);if(!all.length)return netState();flushing=true;
+  try{const byCode={};for(const[k,b]of all)(byCode[b.by]=byCode[b.by]||[]).push([k,b]);
+    for(const[code,list]of Object.entries(byCode)){const chunk=list.slice(0,300);
+      let r;try{r=await rpc("judge_push",{p_code:code,p_items:chunk.map(([k,b])=>({dorsal:b.dorsal,ts:b.ts,sex:b.sex||"",dev:b.dev||DEV}))})}
+      catch(e){if(e&&e.message==="codigo_invalido"){for(const[k]of chunk)delete pending[k];setFlash(false,"Un código ya no es válido; esos registros no se enviaron. Avise al coordinador.")}continue}
+      const ok=new Set(r.ok||[]),bad=new Set(r.bad||[]);
+      for(const[k,b]of chunk){if(ok.has(b.dorsal)){const m=marks[b.point];if(m&&!m.has(b.dorsal))m.set(b.dorsal,{ts:b.ts,sex:b.sex||"",ids:[]});delete pending[k]}else if(bad.has(b.dorsal))delete pending[k]}
+      if(bad.size)setFlash(false,`No se aceptaron ${[...bad].join(", ")}: están fuera de su rango.`)}
+    lsSet("cp5k.pending",pending)}
+  finally{flushing=false;refresh()}}
+async function unmark(n){const j=myJudge();if(!j)return;const p=j.point;S.undo=null;
+  for(const k of Object.keys(pending)){if(pending[k].point===p&&pending[k].dorsal===n)delete pending[k]}lsSet("cp5k.pending",pending);
+  if(!(marks[p]&&marks[p].has(n))){setFlash(false,`Se quitó el ${n}`);return refresh()}
+  try{await rpc("judge_unmark",{p_code:S.code,p_dorsal:n,p_dev:DEV});marks[p].delete(n);setFlash(false,`Se quitó el ${n}`)}
+  catch(e){setFlash(false,"No se pudo quitar porque no hay señal. Intente de nuevo en un momento.")}
+  refresh()}
+function quick(){const inp=$("#qn");const n=parseInt(inp.value,10);inp.value="";inp.focus();if(!n)return;
+  const j=myJudge();if(!j)return;const r=rmap.get(n);
+  if(rmap.size&&!r)return setFlash(false,`El ${n} no está en el listado de inscritos. Anótelo en papel.`);
+  if(r&&r[1]==="T")return setFlash(false,`El ${n} es de la Travesía, no de la 5K.`);
+  if(!inRanges(n,j.ranges)){const o=judgeFor(j.point,n);return setFlash(false,o?`El ${n} lo registra el Juez ${o.slot} de este punto.`:`El ${n} no tiene juez asignado aquí. Anótelo en papel.`)}
+  mark(n)}
+function finishList(){const f=fin();return [...allMarks(f.id).entries()].sort((a,b)=>a[1].ts-b[1].ts||a[0]-b[0])}
+function quickFinish(sex){const inp=$("#qn");const n=parseInt(inp.value,10);inp.focus();if(!n)return;
+  if(sex!=="F"&&sex!=="M")return setFlash(false,"Toque F o M para registrar la llegada.");
+  inp.value="";const j=myJudge();if(!j)return;const r=rmap.get(n);
+  if(rmap.size&&!r)return setFlash(false,`El ${n} no está en el listado. Anótelo en papel con la hora y avise al coordinador.`);
+  if(r&&r[1]==="T")return setFlash(false,`El ${n} es de la Travesía, no de la 5K.`);
+  if(!inRanges(n,j.ranges)){const o=judgeFor(j.point,n);return setFlash(false,o?`El ${n} lo registra el Juez ${o.slot} de meta.`:`El ${n} no tiene juez de meta asignado. Anótelo en papel.`)}
+  const L=finishList();const ix=L.findIndex(e=>e[0]===n);
+  if(ix>=0)return setFlash(false,`El ${n} ya llegó (${hhmm(L[ix][1].ts)}).`);
+  const p=fin().id;const key=docId(p,n,j.code);const body={point:p,dorsal:n,sex,ts:now(),by:j.code,dev:DEV};
+  pending[key]=body;lsSet("cp5k.pending",pending);
+  setFlash(true,`${n} · ${sex} registrado${r&&r[1]!=="X"?" · "+CAT1[r[1]]:""}`);refresh();flush()}
+
+/* ---------- vistas ---------- */
+function draw(){const m=$("#main");
+  if(S.view==="pinform")return drawPin();
+  if(S.view==="loading")return;
+  if(S.view==="login")return drawLogin();
+  if(S.view==="judge")return isFinishJudge(myJudge())?drawFinish():drawJudge();
+  if(S.view==="admin")return drawAdmin();
+}
+function drawLogin(){const m=$("#main");
+  m.innerHTML=`<div class="center panel stack">
+    <h2>Ingreso de juez</h2>
+    <p class="muted">Escriba el código que le entregó el coordinador. Solo se pide una vez en este teléfono.</p>
+    <form id="lf" class="row"><input id="code" autocomplete="off" autocapitalize="characters" placeholder="Ej. 2B412" style="flex:1;font-size:22px;letter-spacing:.08em;text-transform:uppercase"><button class="primary">Entrar</button></form>
+    <p id="lerr" class="flash" hidden></p>
+    ${owner?`<button class="link" data-act="toAdmin">Volver al panel de coordinación</button>`:`<button class="link small" data-act="toPin">Soy coordinador</button>`}
+  </div>`;
+  $("#lf").onsubmit=async e=>{e.preventDefault();const c=$("#code").value.trim().toUpperCase();if(!c)return;const le=$("#lerr");le.hidden=false;le.className="flash okf";le.textContent="Verificando…";
+    try{const t0=Date.now();const d=await rpc("judge_login",{p_code:c});
+      if(!d){le.className="flash";le.textContent="Ese código no existe. Revise letras y números.";return}
+      setOffset(d.now,t0);S.code=c;lsSet("cp5k.code",c);lsSet("cp5k.jd",d);lastJD=jdSig(d);applyJD(d);S.view="judge";draw();pollJudge()}
+    catch(e){le.className="flash";le.textContent="No hay conexión. Intente donde tenga señal."}};
+}
+function drawPin(){const m=$("#main");
+  m.innerHTML=`<div class="center panel stack">
+    <h2>Coordinación</h2>
+    <p class="muted">Escriba el PIN de coordinación.</p>
+    <form id="pf" class="row"><input id="pin" type="password" autocomplete="off" autocapitalize="characters" style="flex:1;font-size:20px;letter-spacing:.1em"><button class="primary">Entrar</button></form>
+    <p id="perr" class="flash"${S.pinErr?"":" hidden"}>${esc(S.pinErr||"")}</p>
+    <button class="link small" data-act="toLogin">Soy juez</button>
+  </div>`;
+  $("#pf").onsubmit=async e=>{e.preventDefault();const p=$("#pin").value.trim().toUpperCase();if(!p)return;const pe=$("#perr");pe.hidden=false;pe.className="flash okf";pe.textContent="Verificando…";
+    try{const d=await rpc("admin_data",{p_pin:p});
+      if(!d){pe.className="flash";pe.textContent="PIN incorrecto.";return}
+      PIN=p;lsSet("cp5k.pin",p);owner=true;S.pinErr=null;S.view="admin";lastStruct="";pollAdmin(true)}
+    catch(e){pe.className="flash";pe.textContent="No hay conexión."}};
+}
+function drawJudge(){const j=myJudge();
+  $("#main").innerHTML=`<div class="jhead">
+    <div class="jpoint">${esc(ptName(j.point))} <span>·</span> Juez ${esc(j.slot)}</div>
+    <div class="muted">${j.name?esc(j.name)+" · ":""}Dorsales ${esc(fmtRanges(j.ranges))}</div>
+    <div id="jstats"></div>
+  </div>
+  <form class="quick" id="qf"><input id="qn" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Dorsal" aria-label="Número de dorsal"><button class="primary">Marcar</button></form>
+  <div id="jflash"></div>
+  <div class="row" style="justify-content:space-between;margin-bottom:10px"><label class="row small"><input type="checkbox" id="hide" ${S.hideDone?"checked":""}> Ocultar los que ya pasaron</label>
+    <button class="link small" data-act="logout">Cambiar de juez</button></div>
+  <div class="grid" id="grid"></div><div id="undo"></div>`;
+  $("#qf").onsubmit=e=>{e.preventDefault();quick()};
+  $("#hide").onchange=e=>{S.hideDone=e.target.checked;refresh()};
+  refresh();renderFlash();
+}
+function drawFinish(){const j=myJudge();
+  $("#main").innerHTML=`<div class="jhead">
+    <div class="jpoint">${esc(ptName(j.point))} <span>·</span> Juez ${esc(j.slot)}</div>
+    <div class="muted">${j.name?esc(j.name)+" · ":""}Dorsales ${esc(fmtRanges(j.ranges))}. Escriba el dorsal y toque F o M, en el orden exacto en que cruzan la línea.</div>
+  </div>
+  <form class="quick" id="qf"><input id="qn" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Dorsal" aria-label="Dorsal que cruzó la meta"><button type="submit" class="primary sexb" value="F" aria-label="Llegó, rama femenina">F</button><button type="submit" class="primary sexb m" value="M" aria-label="Llegó, rama masculina">M</button></form>
+  <div id="jflash"></div>
+  <div id="fstats" class="row" style="justify-content:space-between;margin-bottom:8px"></div>
+  <div class="tablewrap"><table><thead><tr><th>#</th><th>Dorsal</th><th>Rama</th><th>Hora</th><th></th></tr></thead><tbody id="flist"></tbody></table></div>
+  <div class="row" style="justify-content:flex-end"><button class="link small" data-act="logout">Cambiar de juez</button></div>
+  <div id="undo"></div>`;
+  $("#qf").onsubmit=e=>{e.preventDefault();quickFinish(e.submitter&&e.submitter.value)};
+  $("#qn").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();setFlash(false,"Toque F o M para registrar la llegada.")}};
+  refresh();renderFlash();
+}
+function renderUndo(){const u=$("#undo");if(!u)return;
+  u.innerHTML=S.undo!=null?`<div class="undo"><span style="flex:1">¿Quitar el <b>${S.undo}</b> de este punto?</span><button data-act="doUndo">Quitar</button><button data-act="noUndo">Cancelar</button></div>`:""}
+function refresh(){
+  if(S.view==="judge"){const j=myJudge();if(!j)return;
+    if(isFinishJudge(j)&&$("#flist")){const L=finishList().filter(e=>inRanges(e[0],j.ranges));
+      $("#fstats").innerHTML=`<b>${L.length} llegadas registradas por usted</b><span class="small muted">${L.length>25?"Se muestran las últimas 25":""}</span>`;
+      const rows=L.map((e,i)=>[i+1,e[0],e[1]]).slice(-25).reverse();
+      $("#flist").innerHTML=rows.map(([pos,n,v])=>{const r=rmap.get(n);return `<tr${v.pend?' class="pendr"':""}><td class="d">${pos}</td><td class="d">${n}</td><td><b>${esc(v.sex||"—")}</b></td><td>${hhmm(v.ts)}${v.pend?" · por enviar":""}</td><td><button class="link small" data-undo="${n}">Quitar</button></td></tr>`}).join("")||`<tr><td colspan="5" class="muted">Todavía no hay llegadas.</td></tr>`;
+      renderUndo();
+    } else if($("#grid")){const items=judgeItems(j);const am=allMarks(j.point);let done=0;
+      const html=items.map(r=>{const mi=am.get(r[0]);if(mi)done++;if(mi&&S.hideDone)return"";
+        return `<button class="bib${mi?" on":""}${mi&&mi.pend?" pend":""}" data-n="${r[0]}" aria-pressed="${!!mi}"><span class="n">${r[0]}</span><span class="t">${mi?hhmm(mi.ts):(r[1]&&r[1]!=="X"?(CAT1[r[1]]||"").slice(0,3)+(r[2]?" "+r[2]:""):"")}</span></button>`}).join("");
+      $("#grid").innerHTML=html||`<p class="muted">Todos sus corredores ya pasaron por este punto.</p>`;
+      const pct=items.length?Math.round(done*100/items.length):0;
+      $("#jstats").innerHTML=`<div class="row" style="justify-content:space-between"><b style="font-variant-numeric:tabular-nums">${done} de ${items.length} pasaron</b><span class="muted small">${pct}%</span></div><div class="progress"><i style="width:${pct}%"></i></div>`;
+      renderUndo();
+    }
+  }
+  if(S.view==="admin"){
+    if(S.tab==="avance"&&$("#abody"))drawAvanceBody();
+    if(S.tab==="resultados"&&$("#rbody")){drawResState();if(!editingIn("#rbody"))drawResBody()}
+  }
+  netState();
+}
+
+/* ---------- panel: avance ---------- */
+function drawAdmin(){const m=$("#main");
+  const tabs=[["avance","Avance"],["resultados","Resultados"],["jueces","Jueces"],["listado","Listado"]];
+  m.innerHTML=`<div class="row" style="padding-top:16px;justify-content:space-between"><h2>Panel de coordinación</h2><div class="row"><button data-act="tryJudge">Abrir vista de juez</button><button class="link small" data-act="adminOut">Salir</button></div></div>
+  <div class="tabs">${tabs.map(([k,l])=>`<button data-tab="${k}" class="${S.tab===k?"on":""}">${l}</button>`).join("")}</div><div id="tab"></div>`;
+  if(!cfg&&(S.tab==="avance"||S.tab==="resultados")){$("#tab").innerHTML=`<div class="panel stack"><h3>Primero cargue el listado</h3><p class="muted">Vaya a <b>Listado</b>, pegue los dorsales inscritos y después reparta rangos en <b>Jueces</b>.</p></div>`;return}
+  if(S.tab==="avance")drawAvance();else if(S.tab==="resultados")drawRes();else if(S.tab==="jueces")drawJueces();else drawListado();
+}
+function drawAvance(){
+  $("#tab").innerHTML=`<div class="stack"><div class="points" id="pts"></div>
+  <div class="row"><select id="fc"><option value="">Todas las categorías</option>${Object.entries(CAT).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select>
+  <select id="fs"><option value="">Ambas ramas</option><option value="F">Femenino</option><option value="M">Masculino</option></select>
+  <select id="fst"><option value="">Todos</option><option value="inc">Les falta algún control</option><option value="cmp">Pasaron todos los controles</option><option value="lleg">Llegaron a la meta</option></select>
+  <input id="fq" inputmode="numeric" placeholder="Buscar dorsal" style="width:140px"></div>
+  <div id="abody"></div></div>`;
+  const f=S.filt;$("#fc").value=f.c;$("#fs").value=f.s;$("#fst").value=f.st;$("#fq").value=f.q;
+  ["fc","fs","fst"].forEach(id=>$("#"+id).onchange=e=>{S.filt[{fc:"c",fs:"s",fst:"st"}[id]]=e.target.value;drawAvanceBody()});
+  $("#fq").oninput=e=>{S.filt.q=e.target.value.trim();drawAvanceBody()};
+  drawAvanceBody();
+}
+function drawAvanceBody(){
+  const P=points(),C=controls(),N=C.length,J=judges(),R=runners5k(),F=fin();
+  $("#pts").innerHTML=P.map(p=>{const got=marks[p.id]?marks[p.id].size:0;
+    const js=p.finish?"":J.filter(j=>j.point===p.id).sort((a,b)=>a.slot.localeCompare(b.slot)).map(j=>{const it=judgeItems(j);const d=it.filter(r=>marks[p.id]&&marks[p.id].has(r[0])).length;return `<span class="chip" title="${esc(j.name||"")}">${esc(j.slot)} ${d}/${it.length}</span>`}).join("");
+    return `<div class="pcard"><span class="small muted">${esc(p.name)}</span><span class="big">${got}<span class="muted" style="font-size:18px"> / ${R.length}</span></span><div class="chips">${js}</div></div>`}).join("");
+  const f=S.filt;let rows=R.slice().sort((a,b)=>a[0]-b[0]).filter(r=>(!f.c||effCat(r[0])===f.c)&&(!f.s||effSex(r[0])===f.s)&&(!f.q||String(r[0]).startsWith(f.q)));
+  if(f.st){rows=rows.filter(r=>{const c=passCount(r[0]);if(f.st==="cmp")return c===N;if(f.st==="lleg")return marks[F.id]&&marks[F.id].has(r[0]);return c>0&&c<N})}
+  const shown=rows.slice(0,300);
+  $("#abody").innerHTML=`<p class="small muted">${rows.length} corredores${rows.length>300?" (se muestran los primeros 300; use los filtros)":""}. "Les falta algún control" solo lista a quienes pasaron por al menos uno.</p>
+  <div class="tablewrap"><table><thead><tr><th>Dorsal</th><th>Nombre</th><th>Categoría</th><th>Rama</th>${P.map(p=>`<th class="c">${esc(shortName(p))}</th>`).join("")}<th class="c">Controles</th></tr></thead><tbody>
+  ${shown.map(r=>{const c=passCount(r[0]);return `<tr class="${c===N?"cmp":c>0?"inc":""}"><td class="d">${r[0]}</td><td>${esc(r[3]||"")}</td><td>${esc(CAT1[effCat(r[0])]||"")}</td><td>${esc(effSex(r[0])||"—")}</td>${P.map(p=>{const mi=marks[p.id]&&marks[p.id].get(r[0]);return `<td class="c" title="${mi?hhmm(mi.ts):""}"><span class="dot${mi?" y":""}"></span></td>`}).join("")}<td class="c tot">${c}/${N}</td></tr>`}).join("")}
+  </tbody></table></div>`;
+}
+
+/* ---------- panel: resultados ---------- */
+function groups(){const o=[];for(const c of ["E","D","G","L"])for(const s of ["F","M"])o.push({c,s,key:c+s,label:`${CAT[c]} · ${SEXN[s]}`});return o}
+function ranking(c,s){const N=controls().length;let place=0;
+  return finishOrder().filter(e=>effCat(e.n)===c&&effSex(e.n)===s).map(e=>{
+    const pc=passCount(e.n);const st=status.get(e.n);const est=(st&&st.estado)||"";let why="";
+    if(est)why=EST[est];else if(pc<N)why="Falta "+missing(e.n).join(", ");
+    return {...e,r:rmap.get(e.n)||[e.n,"","",""],pc,est,obs:(st&&st.obs)||"",why,place:why?null:++place}})}
+function countdownText(){const p=state.prelimAt;if(!p||state.officialAt)return"";const end=p+15*60000;const left=end-Date.now();
+  if(left<=0)return `La ventana de reclamos cerró a las ${hhmm(end).slice(0,5)}`;
+  return `Reclamos hasta las ${hhmm(end).slice(0,5)} · quedan ${Math.floor(left/60000)}:${String(Math.floor(left/1000)%60).padStart(2,"0")}`}
+function drawRes(){
+  $("#tab").innerHTML=`<div class="stack"><div class="panel" id="rstate"></div>
+  <div class="row"><button data-act="copyRes">Copiar resultados</button><span class="small muted">Solo reciben lugar quienes pasaron por todos los controles, llegaron a la meta y no están descalificados.</span></div>
+  <div id="obsbar"></div><div id="rbody"></div>
+  <details class="panel"><summary>Historial de correcciones</summary><div id="rlog"></div></details></div>`;
+  drawResState();drawObsBar();drawResBody();
+}
+function drawResState(){const el=$("#rstate");if(!el)return;let h;
+  if(state.officialAt)h=`<div class="row"><span class="pill ok">Oficial</span><span>Acta firmada a las ${hhmm(state.officialAt).slice(0,5)}. Ya se puede premiar.</span><div class="sp"></div><button data-act="reopen">Volver a borrador</button></div>`;
+  else if(state.prelimAt)h=`<div class="row"><span class="pill warn">Preliminar</span><span>Publicado a las ${hhmm(state.prelimAt).slice(0,5)}.</span><b id="cd">${countdownText()}</b><div class="sp"></div><button class="primary" data-act="official">Marcar oficial (acta firmada)</button><button data-act="reopen">Volver a borrador</button></div>`;
+  else h=`<div class="row"><span class="pill">Borrador</span><span>Cuando anuncie los resultados preliminares, regístrelo aquí para iniciar los 15 minutos de reclamos.</span><div class="sp"></div><button class="primary" data-act="prelim">Registrar publicación de preliminares</button></div>`;
+  el.innerHTML=h}
+function cut(rows){const o=[];let v=0;for(const x of rows){o.push(x);if(x.place)v++;if(v>=5||o.length>=12)break}return o}
+function drawObsBar(){const el=$("#obsbar");if(!el)return;const n=S.obsEdit;
+  if(n==null){el.innerHTML="";return}const st=status.get(n);
+  el.innerHTML=`<div class="panel row"><label for="obsin"><b>Nota para el ${n}</b></label><input id="obsin" style="flex:1;min-width:200px" value="${esc((st&&st.obs)||"")}" placeholder="Ej. Reclamo de 512 por orden de llegada, revisado en video"><button class="primary" data-act="saveObs">Guardar nota</button><button data-act="cancelObs">Cancelar</button></div>`;
+  $("#obsin").focus()}
+function drawResBody(){
+  const unc=finishOrder().filter(e=>!classified(e.n));
+  let h="";
+  if(unc.length)h+=`<section class="rcard" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><h3>Llegadas por clasificar</h3><span class="pill warn">${unc.length}</span></div>
+    <p class="small muted">Llegaron a la meta sin categoría o sin rama. Asígnelas para que entren a su grupo; se ordenan por su hora de llegada.</p>
+    <div class="tablewrap"><table><thead><tr><th>Dorsal</th><th>Nombre</th><th>Llegada</th><th>Categoría</th><th>Rama</th></tr></thead><tbody>
+    ${unc.slice(0,60).map(e=>{const r=rmap.get(e.n);const c=effCat(e.n),x=effSex(e.n);return `<tr><td class="d">${e.n}</td><td class="nm">${esc(r?r[3]:"No inscrito")}</td><td>${hhmm(e.ts)}</td>
+      <td><select data-cat="${e.n}" aria-label="Categoría del ${e.n}"><option value="">Elegir</option>${Object.entries(CAT).map(([k,v])=>`<option value="${k}"${c===k?" selected":""}>${CAT1[k]}</option>`).join("")}</select></td>
+      <td><select data-rama="${e.n}" aria-label="Rama del ${e.n}"><option value="">Elegir</option><option value="F"${x==="F"?" selected":""}>F</option><option value="M"${x==="M"?" selected":""}>M</option></select></td></tr>`}).join("")}
+    </tbody></table></div>${unc.length>60?`<p class="small muted">Se muestran las primeras 60.</p>`:""}</section>`;
+  h+=`<div class="rgrid">`+groups().map(g=>{const rows=ranking(g.c,g.s);const all=!!S.showAll[g.key];const shown=all?rows:cut(rows);
+    return `<section class="rcard"><div class="row" style="justify-content:space-between"><h3>${g.label}</h3><span class="small muted">${rows.length} llegadas</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Lugar</th><th>Dorsal</th><th>Nombre</th><th>Llegada</th><th>Rama · estado</th><th></th></tr></thead><tbody>
+    ${shown.map((x,i)=>`<tr class="${x.place&&x.place<=3?"pod":""}${x.why?" inv":""}"><td class="d">${x.place??"—"}</td><td class="d">${x.n}</td>
+      <td class="nm">${esc(x.r[3]||"")}${x.why?`<div class="small why">${esc(x.why)}</div>`:""}${x.obs?`<div class="small muted">${esc(x.obs)}</div>`:""}</td>
+      <td>${hhmm(x.ts)}</td>
+      <td><select data-rama="${x.n}" aria-label="Rama del ${x.n}"><option value="F"${g.s==="F"?" selected":""}>F</option><option value="M"${g.s==="M"?" selected":""}>M</option></select> <select id="st${x.n}" data-st="${x.n}" aria-label="Estado del ${x.n}">${Object.entries(EST).map(([k,v])=>`<option value="${k}"${x.est===k?" selected":""}>${v}</option>`).join("")}</select></td>
+      <td><button class="link small" data-obs="${x.n}">Nota</button>${i>0?`<button class="link small" data-up="${g.key}:${x.n}" title="Pasar delante del anterior">Subir</button>`:""}</td></tr>`).join("")||`<tr><td colspan="6" class="muted">Sin llegadas todavía.</td></tr>`}
+    </tbody></table></div>${(rows.length>shown.length||all)?`<button class="link small" data-all="${g.key}">${all?"Ver menos":"Ver las "+rows.length+" llegadas"}</button>`:""}</section>`}).join("")+`</div>`;
+  $("#rbody").innerHTML=h;
+  const rl=$("#rlog");if(rl)rl.innerHTML=logs.length?`<div class="tablewrap"><table><thead><tr><th>Hora</th><th>Acción</th><th>Dorsal</th><th>Quién</th><th>Detalle</th></tr></thead><tbody>${logs.map(l=>`<tr><td>${hhmm(l.t)}</td><td>${esc(ACTL[l.act]||l.act)}</td><td>${l.dorsal??""}</td><td>${esc(l.by||"")}${l.point?" · "+esc(ptName(l.point)):""}</td><td style="white-space:normal">${esc(l.detail||"")}</td></tr>`).join("")}</tbody></table></div>`:`<p class="muted small">Sin correcciones registradas.</p>`;
+}
+async function act(fn,args){const r=await rpc(fn,{p_pin:PIN,...args});await pollAdmin(true);return r}
+async function saveStatus(n,patch){try{await act("admin_status",{p_dorsal:n,p_patch:patch})}catch(e){alertBar("No se pudo guardar el cambio: "+(e.message||e.code))}}
+function alertBar(t){const el=$("#obsbar");if(el)el.innerHTML=`<p class="flash">${esc(t)}</p>`}
+async function swapUp(key,n){const rows=ranking(key[0],key[1]);const i=rows.findIndex(x=>x.n===n);if(i<1)return;const a=rows[i-1],b=rows[i];
+  try{await act("admin_swap",{p_up:b.n,p_prev:a.n})}catch(e){alertBar("No se pudo cambiar el orden: "+(e.message||e.code))}}
+async function setState(patch,detail){const s={...state,...patch};
+  try{await act("admin_state",{p_prelim:s.prelimAt||null,p_official:s.officialAt||null,p_detail:detail})}catch(e){alertBar("No se pudo guardar: "+(e.message||e.code))}}
+async function copyText(txt,btn,label){try{await navigator.clipboard.writeText(txt);btn.textContent="Copiado";setTimeout(()=>btn.textContent=label,2000)}catch(e){S.tab="listado";S.csv=txt;S.parsed=null;draw()}}
+function copyRes(btn){const L=["grupo,lugar,dorsal,nombre,hora_llegada,controles,estado"];const N=controls().length;
+  for(const g of groups())for(const x of ranking(g.c,g.s))L.push([g.label,x.place??"",x.n,`"${(x.r[3]||"").replace(/"/g,"'")}"`,hhmm(x.ts),`${x.pc}/${N}`,`"${x.why||"Válido"}"`].join(","));
+  copyText(L.join("\n"),btn,"Copiar resultados")}
+
+/* ---------- panel: jueces ---------- */
+function drawJueces(){
+  if(!S.edit)S.edit=JSON.parse(JSON.stringify({points:points(),judges:judges()}));
+  const E=S.edit;const R=runners5k();
+  const cover=E.points.filter(p=>!p.finish).map(p=>{const js=E.judges.filter(j=>j.point===p.id);
+    return {p,miss:R.filter(r=>!js.some(j=>inRanges(r[0],j.ranges))).length,dup:R.filter(r=>js.filter(j=>inRanges(r[0],j.ranges)).length>1).length}});
+  const isF=j=>{const p=E.points.find(x=>x.id===j.point);return p&&p.finish};
+  $("#tab").innerHTML=`<div class="stack">
+  <div class="panel stack"><h3>Puntos de control y meta</h3><div class="points">${E.points.map((p,i)=>`<label class="stack small" style="gap:4px">${p.finish?"Meta":"Punto "+p.id}<input id="pn${i}" value="${esc(p.name)}"></label>`).join("")}</div></div>
+  <div class="panel stack"><div class="row" style="justify-content:space-between"><h3>Jueces y rangos</h3><button data-act="autoSplit">Repartir rangos automáticamente</button></div>
+  <p class="small muted">El reparto automático divide los dorsales de la 5K en partes iguales entre los jueces de cada punto de control. En la meta, cada juez registra en orden de llegada los dorsales de su rango. Los rangos se escriben como <code>351-479, 700-710</code>.</p>
+  ${cover.filter(c=>c.miss||c.dup).map(c=>`<p class="flash small">${esc(c.p.name)}: ${c.miss?c.miss+" dorsales sin juez":""}${c.miss&&c.dup?" · ":""}${c.dup?c.dup+" dorsales con dos jueces":""}</p>`).join("")}
+  <div class="tablewrap"><table class="jt"><thead><tr><th>Punto</th><th>Juez</th><th>Código</th><th>Nombre</th><th>Rangos</th><th class="c">Dorsales</th></tr></thead><tbody>
+  ${E.judges.map((j,i)=>`<tr><td>${isF(j)?"Meta":j.point}</td><td>${esc(j.slot)}</td><td><input id="jc${i}" value="${esc(j.code)}" style="width:90px;text-transform:uppercase"></td><td><input id="jn${i}" value="${esc(j.name||"")}" placeholder="Nombre del juez"></td>
+    <td><input id="jr${i}" value="${esc(fmtRanges(j.ranges).replace(/–/g,"-").replace("sin asignar",""))}"></td><td class="c">${judgeItems(j).length}</td></tr>`).join("")}
+  </tbody></table></div>
+  <div class="row"><button class="primary" data-act="saveCfg">Guardar cambios</button><button data-act="discard">Descartar</button><span id="smsg" class="small"></span></div></div></div>`;
+  E.points.forEach((p,i)=>$("#pn"+i).oninput=e=>{p.name=e.target.value});
+  E.judges.forEach((j,i)=>{$("#jc"+i).oninput=e=>{j.code=e.target.value.trim().toUpperCase()};$("#jn"+i).oninput=e=>{j.name=e.target.value};
+    const ri=$("#jr"+i);if(ri)ri.onchange=e=>{const r=parseRanges(e.target.value);if(r){j.ranges=r;drawJueces()}else{$("#smsg").textContent=`Rango no válido en ${j.code}`}}});
+}
+function splitChunks(arr,k){const out=[];let s=0;for(let i=0;i<k;i++){const len=Math.floor((arr.length-s)/(k-i));out.push(arr.slice(s,s+len));s+=len}return out}
+function toRanges(nums){return nums.length?[[nums[0],nums[nums.length-1]]]:[]}
+function autoSplit(){const E=S.edit;const R=runners5k();const all=R.map(r=>r[0]).sort((a,b)=>a-b);
+  for(const p of E.points){if(p.finish)continue;const js=E.judges.filter(j=>j.point===p.id).sort((a,b)=>a.slot.localeCompare(b.slot));let chunks;
+    chunks=splitChunks(all,js.length);
+    js.forEach((j,i)=>j.ranges=toRanges(chunks[i]||[]))}
+  drawJueces();$("#smsg").textContent="Rangos repartidos. Revise y guarde."}
+async function saveCfg(){const E=S.edit;const codes=E.judges.map(j=>j.code);
+  if(codes.some(c=>!c)||new Set(codes).size!==codes.length){$("#smsg").textContent="Cada juez necesita un código distinto.";return}
+  try{await act("admin_cfg",{p_points:E.points,p_judges:E.judges});S.edit=null;drawJueces();$("#smsg").textContent="Guardado. Los jueces ven sus rangos nuevos en pocos minutos."}
+  catch(e){$("#smsg").textContent="No se pudo guardar: "+(e.message||e.code)}}
+
+/* ---------- panel: listado ---------- */
+function normCat(x){x=(x||"").trim().toLowerCase();if(!x)return"";if(x.startsWith("eg")||x==="g")return"G";if(x.startsWith("e"))return"E";if(x.startsWith("d"))return"D";if(x.startsWith("l"))return"L";if(x.startsWith("t"))return"T";if(x.startsWith("s")||x==="x")return"X";return""}
+function normSex(x){x=(x||"").trim().toLowerCase();if(/^(f|fem|mujer)/.test(x))return"F";if(/^(m|masc|hombre|h$)/.test(x))return"M";return""}
+function parseList(txt){const rows=[],errs=[],seen=new Set();
+  txt.split(/\r?\n/).forEach((line,i)=>{if(!line.trim())return;const f=line.split(/\t|;|,/).map(x=>x.trim());const n=parseInt(f[0],10);
+    if(!n){if(i>0)errs.push(`Línea ${i+1}: no empieza con un dorsal`);return}
+    const c=normCat(f[1]);if(!c){errs.push(`Línea ${i+1}: categoría "${f[1]||""}" no reconocida`);return}
+    if(seen.has(n)){errs.push(`Línea ${i+1}: el ${n} está repetido`);return}seen.add(n);
+    rows.push([n,c,normSex(f[2]),f.slice(3).join(" ").trim()])});
+  return {rows,errs}}
+function drawListado(){
+  const keys=["E","D","G","L","X","T"];
+  const sum=keys.map(c=>{const r=runners.filter(x=>x[1]===c);return `<tr><td>${CAT1[c]}${c==="T"?" (no entra a la 5K)":""}</td><td class="c">${r.filter(x=>x[2]==="F").length}</td><td class="c">${r.filter(x=>x[2]==="M").length}</td><td class="c">${r.filter(x=>!x[2]).length}</td><td class="c"><b>${r.length}</b></td></tr>`}).join("");
+  $("#tab").innerHTML=`<div class="stack">
+  <div class="panel stack"><h3>Listado actual · ${runners.length} dorsales</h3>
+  <div class="tablewrap"><table><thead><tr><th>Categoría</th><th class="c">F</th><th class="c">M</th><th class="c">Sin rama</th><th class="c">Total</th></tr></thead><tbody>${sum}</tbody></table></div>
+  <p class="small muted">La rama se registra en la meta. Lo que falte se completa en Resultados, en Llegadas por clasificar.</p></div>
+  <div class="panel stack"><h3>Cargar listado definitivo</h3>
+  <p class="small muted">Copie las columnas desde Excel y péguelas aquí, una fila por participante: <code>dorsal · categoría · rama · nombre</code>. Categoría: Estudiante, Docente, Egresado, Libre, Travesía o Sin datos (kit vendido sin datos aún). Rama: F, M o vacía (se define en la meta). La fila de encabezados se ignora.</p>
+  <textarea id="csv" placeholder="417	Estudiante	F	Ana López">${esc(S.csv)}</textarea>
+  <div class="row"><button data-act="preview">Revisar</button><button class="link" data-act="ref2024">Usar numeración de referencia 2024</button></div>
+  <div id="pv"></div></div>
+  <div class="panel stack"><h3>Zona de pruebas</h3><p class="small muted">Deja en cero las marcas de paso y de meta, estados, notas, correcciones y el estado de resultados. Lo anterior queda archivado en la base de datos, no se pierde. El listado y los jueces se conservan. Úselo al terminar cada simulacro y una vez más el viernes.</p>
+  <div class="row"><button data-act="wipe">${S.wipe?"Sí, dejar todo en cero":"Dejar en cero los registros de prueba"}</button>${S.wipe?`<button data-act="wipeNo">Cancelar</button>`:""}<span id="wmsg" class="small"></span></div></div></div>`;
+  $("#csv").oninput=e=>{S.csv=e.target.value;S.parsed=null;$("#pv").innerHTML=""};
+  if(S.parsed)drawPreview();
+}
+function drawPreview(){const {rows,errs}=S.parsed;const cnt=c=>rows.filter(r=>r[1]===c).length;
+  $("#pv").innerHTML=`<div class="stack"><p><b>${rows.length}</b> dorsales leídos: ${["E","D","G","L","X","T"].map(c=>`${CAT1[c]} ${cnt(c)}`).join(" · ")}.</p>
+  ${errs.length?`<div class="flash small">${errs.slice(0,8).map(esc).join("<br>")}${errs.length>8?`<br>y ${errs.length-8} más`:""}</div>`:""}
+  ${rows.length?`<div class="row"><button class="primary" data-act="replaceList">Reemplazar listado (${rows.length})</button><span class="small muted">Las marcas ya registradas no se borran.</span></div>`:""}</div>`}
+async function replaceList(){try{await act("admin_runners",{p_list:S.parsed.rows});S.parsed=null;S.csv="";S.edit=null;S.tab="jueces";draw();setTimeout(()=>{const m=$("#smsg");if(m)m.textContent="Listado cargado. Use \"Repartir rangos automáticamente\" y guarde."},50)}
+  catch(e){$("#pv").innerHTML=`<p class="flash">No se pudo guardar: ${esc(e.message||e.code)}</p>`}}
+function ref2024(){const L=[];const add=(a,b,c)=>{for(let n=a;n<=b;n++)L.push(`${n}\t${c}`)};add(351,738,"Estudiante");add(801,847,"Docente");add(901,915,"Egresado");add(931,953,"Libre");S.csv=L.join("\n");S.parsed=parseList(S.csv);drawListado()}
+async function doWipe(){const msg=$("#wmsg");msg.textContent="Archivando…";
+  try{const n=await act("admin_wipe",{});S.wipe=0;drawListado();$("#wmsg").textContent=`Listo: ${n} marcas de prueba archivadas. El sistema quedó en cero.`}
+  catch(e){msg.textContent="No se pudo: "+(e.message||e.code)}}
+
+/* ---------- acciones ---------- */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-n]");if(b){mark(+b.dataset.n);return}
+  const u=e.target.closest("[data-undo]");if(u){S.undo=+u.dataset.undo;renderUndo();return}
+  const t=e.target.closest("[data-tab]");if(t){S.tab=t.dataset.tab;if(S.tab!=="jueces")S.edit=null;S.obsEdit=null;S.wipe=0;draw();return}
+  const o=e.target.closest("[data-obs]");if(o){S.obsEdit=+o.dataset.obs;drawObsBar();return}
+  const up=e.target.closest("[data-up]");if(up){const[k,n]=up.dataset.up.split(":");swapUp(k,+n);return}
+  const al=e.target.closest("[data-all]");if(al){S.showAll[al.dataset.all]=!S.showAll[al.dataset.all];drawResBody();return}
+  const a=e.target.closest("[data-act]");if(!a)return;const act=a.dataset.act;
+  if(act==="doUndo")unmark(S.undo);else if(act==="noUndo"){S.undo=null;renderUndo()}
+  else if(act==="logout"){flush();S.code=null;lsSet("cp5k.code",null);JD=null;S.view="login";draw()}
+  else if(act==="tryJudge"){S.view=myJudge()?"judge":"login";draw();if(S.view==="judge")pollJudge()}
+  else if(act==="toAdmin"){S.view="admin";lastStruct="";pollAdmin(true);draw()}
+  else if(act==="toPin"){S.view="pinform";draw()}
+  else if(act==="toLogin"){S.view="login";draw()}
+  else if(act==="adminOut"){PIN=null;lsSet("cp5k.pin",null);owner=false;S.view="login";draw()}
+  else if(act==="autoSplit")autoSplit();else if(act==="saveCfg")saveCfg();else if(act==="discard"){S.edit=null;drawJueces()}
+  else if(act==="preview"){S.parsed=parseList(S.csv);drawPreview()}else if(act==="replaceList")replaceList();else if(act==="ref2024")ref2024();
+  else if(act==="copyRes")copyRes(a);
+  else if(act==="prelim")setState({prelimAt:Date.now(),officialAt:null},"Preliminares publicados; abre la ventana de reclamos");
+  else if(act==="official")setState({officialAt:Date.now()},"Resultados oficiales, acta firmada");
+  else if(act==="reopen")setState({prelimAt:null,officialAt:null},"Resultados regresan a borrador");
+  else if(act==="saveObs"){const n=S.obsEdit;const v=$("#obsin").value.trim();S.obsEdit=null;drawObsBar();saveStatus(n,{obs:v})}
+  else if(act==="cancelObs"){S.obsEdit=null;drawObsBar()}
+  else if(act==="wipe"){if(S.wipe){a.disabled=true;doWipe()}else{S.wipe=1;drawListado()}}
+  else if(act==="wipeNo"){S.wipe=0;drawListado()}
+});
+document.addEventListener("change",e=>{const t=e.target;
+  if(t.dataset.st!==undefined){saveStatus(+t.dataset.st,{estado:t.value});t.blur()}
+  else if(t.dataset.rama!==undefined){saveStatus(+t.dataset.rama,{rama:t.value});t.blur()}
+  else if(t.dataset.cat!==undefined){saveStatus(+t.dataset.cat,{cat:t.value});t.blur()}});
+boot();
+</script>
+</body>
+</html>
